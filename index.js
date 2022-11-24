@@ -49,6 +49,11 @@ async function run() {
       .db("basementOfBooks")
       .collection("categories");
 
+    // products collection
+    const productsCollection = client
+      .db("basementOfBooks")
+      .collection("products");
+
     //----------------------
     // API for categories
     //----------------------
@@ -57,6 +62,16 @@ async function run() {
       const query = {};
       const categories = await categoriesCollection.find(query).toArray();
       res.send(categories);
+    });
+
+    //----------------------
+    // API for products
+    //----------------------
+
+    app.post("/products", async (req, res) => {
+      const product = req.body;
+      const result = await productsCollection.insertOne(product);
+      res.send(result);
     });
 
     //-----------------------
