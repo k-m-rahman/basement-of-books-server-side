@@ -44,6 +44,21 @@ async function run() {
     // users collection
     const usersCollection = client.db("basementOfBooks").collection("users");
 
+    // categories collection
+    const categoriesCollection = client
+      .db("basementOfBooks")
+      .collection("categories");
+
+    //----------------------
+    // API for categories
+    //----------------------
+
+    app.get("/categories", async (req, res) => {
+      const query = {};
+      const categories = await categoriesCollection.find(query).toArray();
+      res.send(categories);
+    });
+
     //-----------------------
     // API for users
     //-----------------------
