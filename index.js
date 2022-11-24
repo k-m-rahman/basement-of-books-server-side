@@ -71,6 +71,15 @@ async function run() {
       res.send(result);
     });
 
+    // verifying the role of user
+    app.get("/users/role/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      // res.send({ isAdmin: user?.role === "admin" });
+      res.send({ role: user.role });
+    });
+
     //------------------
     // jwt
     //------------------
