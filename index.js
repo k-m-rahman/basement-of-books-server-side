@@ -54,12 +54,28 @@ async function run() {
       .db("basementOfBooks")
       .collection("products");
 
+    // products collection
+    const bookingsCollection = client
+      .db("basementOfBooks")
+      .collection("bookings");
+
     //   verify seller middleware .
     const verifySeller = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
       const user = await usersCollection.findOne(query);
       if (user.role !== "Seller") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
+    //   verify seller middleware .
+    const verifyBuyer = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user.role !== "Buyer") {
         return res.status(403).send({ message: "forbidden access" });
       }
       next();
@@ -79,17 +95,54 @@ async function run() {
     // API for products
     //----------------------
 
-    app.get("/products/:categoryId", async (req, res) => {
+    // getting the products of specific category
+    //-----------------------------------------
+    app.get("/products/:categoryId", verifyJWT, async (req, res) => {
       const categoryId = req.params.categoryId;
-      const query = { categoryId, soldStatus: false };
-      const products = await productsCollection.find(query).toArray();
-      res.send(products);
+
+      //getting the category name
+      const query2 = { _id: ObjectId(categoryId) };
+      const category = await categoriesCollection.findOne(query2);
+
+      if (category) {
+        const query = { categoryId, soldStatus: false };
+        const products = await productsCollection.find(query).toArray();
+
+        res.send({ category, products });
+      } else {
+        res.send("Invalid category");
+      }
     });
 
     // adding products in database
     app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    //-----------------------
+    // API for bookings
+    //-----------------------
+
+    // posting a booking
+    app.post("/bookings", verifyJWT, verifyBuyer, async (req, res) => {
+      const booking = req.body;
+
+      // checking whether the user already booked the specific product
+      const email = req.decoded.email;
+      const query = { buyerEmail: email };
+      const bookings = await bookingsCollection.find(query).toArray();
+      const alreadyBooked = bookings.find(
+        (bk) => bk.product === booking.product
+      );
+      if (alreadyBooked) {
+        return res.send({
+          alreadyBooked: true,
+          message: "Product is already booked by this user!",
+        });
+      }
+      const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
 
