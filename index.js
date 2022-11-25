@@ -54,6 +54,17 @@ async function run() {
       .db("basementOfBooks")
       .collection("products");
 
+    //   verify seller middleware .
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user.role !== "Seller") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     //----------------------
     // API for categories
     //----------------------
@@ -68,7 +79,8 @@ async function run() {
     // API for products
     //----------------------
 
-    app.post("/products", async (req, res) => {
+    // adding products in database
+    app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await productsCollection.insertOne(product);
       res.send(result);
@@ -101,13 +113,13 @@ async function run() {
       res.send(result);
     });
 
-    // verifying the role of user
+    // verifying the role of user and send the response to client side
     app.get("/users/role/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
       // res.send({ isAdmin: user?.role === "admin" });
-      res.send({ role: user.role });
+      res.send({ role: user?.role });
     });
 
     //------------------
