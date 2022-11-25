@@ -79,6 +79,13 @@ async function run() {
     // API for products
     //----------------------
 
+    app.get("/products/:categoryId", async (req, res) => {
+      const categoryId = req.params.categoryId;
+      const query = { categoryId, soldStatus: false };
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
+
     // adding products in database
     app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const product = req.body;
