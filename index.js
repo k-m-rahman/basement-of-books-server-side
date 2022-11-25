@@ -125,6 +125,20 @@ async function run() {
     // API for bookings
     //-----------------------
 
+    // getting all the bookings of a specific buyer
+    app.get("/bookings", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const query = { buyerEmail: email };
+      const bookings = await bookingsCollection.find(query).toArray();
+      res.send(bookings);
+    });
+
     // posting a booking
     app.post("/bookings", verifyJWT, verifyBuyer, async (req, res) => {
       const booking = req.body;
