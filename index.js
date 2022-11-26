@@ -121,6 +121,14 @@ async function run() {
       }
     });
 
+    // getting a specific product
+    app.get("/products", verifyJWT, async (req, res) => {
+      const id = req.query.productId;
+      const query = { _id: ObjectId(id) };
+      const product = await productsCollection.findOne(query);
+      res.send(product);
+    });
+
     // adding products in database
     app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const product = req.body;
