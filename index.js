@@ -88,6 +88,17 @@ async function run() {
       next();
     };
 
+    //   verify seller middleware .
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user.role !== "Admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     //----------------------
     // API for categories
     //----------------------
@@ -127,6 +138,20 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const product = await productsCollection.findOne(query);
       res.send(product);
+    });
+
+    // getting products of a specific seller
+    app.get("/sellerProducts/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const query = { sellerEmail: email };
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
     });
 
     // adding products in database
