@@ -9,6 +9,8 @@ const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
+
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -58,6 +60,11 @@ async function run() {
     const bookingsCollection = client
       .db("basementOfBooks")
       .collection("bookings");
+
+    // payments collection
+    const paymentsCollection = client
+      .db("basementOfBooks")
+      .collection("payments");
 
     //   verify seller middleware .
     const verifySeller = async (req, res, next) => {
@@ -202,6 +209,58 @@ async function run() {
       const user = await usersCollection.findOne(query);
       // res.send({ isAdmin: user?.role === "admin" });
       res.send({ role: user?.role });
+    });
+
+    //----------------------------
+    // API for payments
+    //----------------------------
+
+    // stripe payment api
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const amount = booking.price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+
+      // updating the specific booking after payment
+      const id = payment.bookingId;
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          paid: true,
+        },
+      };
+      const updatedResult = await bookingsCollection.updateOne(
+        filter,
+        updateDoc
+      );
+
+      // updating the specific product sold status after payment
+      const query = { _id: ObjectId(payment.productId) };
+      const updateDoc2 = {
+        $set: {
+          soldStatus: true,
+        },
+      };
+      const updatedResult2 = await productsCollection.updateOne(
+        query,
+        updateDoc2
+      );
+
+      res.send(result);
     });
 
     //------------------
