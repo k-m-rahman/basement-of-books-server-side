@@ -139,6 +139,14 @@ async function run() {
       res.send(bookings);
     });
 
+    // getting a specific booking
+    app.get("/bookings/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
+    });
+
     // posting a booking
     app.post("/bookings", verifyJWT, verifyBuyer, async (req, res) => {
       const booking = req.body;
