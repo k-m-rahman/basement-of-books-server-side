@@ -141,23 +141,44 @@ async function run() {
     });
 
     // getting products of a specific seller
-    app.get("/sellerProducts/:email", verifyJWT, async (req, res) => {
-      const email = req.params.email;
+    app.get(
+      "/sellerProducts/:email",
+      verifyJWT,
+      verifySeller,
+      async (req, res) => {
+        const email = req.params.email;
 
-      const decodedEmail = req.decoded.email;
-      if (decodedEmail !== email) {
-        return res.status(403).send({ message: "forbidden access" });
+        const decodedEmail = req.decoded.email;
+        if (decodedEmail !== email) {
+          return res.status(403).send({ message: "forbidden access" });
+        }
+
+        const query = { sellerEmail: email };
+        const products = await productsCollection.find(query).toArray();
+        res.send(products);
       }
-
-      const query = { sellerEmail: email };
-      const products = await productsCollection.find(query).toArray();
-      res.send(products);
-    });
+    );
 
     // adding products in database
     app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    // deleting single product of a specific seller
+    app.delete("/products/:id", verifyJWT, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+
+      // verifying the seller email
+      const decodedEmail = req.decoded.email;
+      const product = await productsCollection.findOne(query);
+      if (product.sellerEmail !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const result = await productsCollection.deleteOne(query);
       res.send(result);
     });
 
