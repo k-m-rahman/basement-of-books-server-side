@@ -166,6 +166,37 @@ async function run() {
       res.send(result);
     });
 
+    app.put(
+      "/product/advertise/:id",
+      verifyJWT,
+      verifySeller,
+      async (req, res) => {
+        const id = req.params.id;
+        console.log(id.bgMagenta);
+        const filter = { _id: ObjectId(id) };
+
+        // verifying the seller email
+        const decodedEmail = req.decoded.email;
+        const product = await productsCollection.findOne(filter);
+        if (product.sellerEmail !== decodedEmail) {
+          return res.status(403).send({ message: "forbidden access" });
+        }
+
+        const options = { upsert: true };
+        const updatedDoc = {
+          $set: {
+            advertised: true,
+          },
+        };
+        const result = await productsCollection.updateOne(
+          filter,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+      }
+    );
+
     // deleting single product of a specific seller
     app.delete("/products/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
