@@ -279,13 +279,6 @@ async function run() {
       res.send(users);
     });
 
-    // getting all the sellers
-    app.get("/users/sellers", verifyJWT, verifyAdmin, async (req, res) => {
-      const query = { role: "Seller" };
-      const sellers = await usersCollection.find(query).toArray();
-      res.send(sellers);
-    });
-
     // posting an user
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -302,6 +295,49 @@ async function run() {
       res.send(result);
     });
 
+    //---------------
+    // api for sellers
+    //-----------------
+
+    // getting all the sellers
+    app.get("/users/sellers", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { role: "Seller" };
+      const sellers = await usersCollection.find(query).toArray();
+      res.send(sellers);
+    });
+
+    // verifying a seller
+    app.put("/users/sellers/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          verified: true,
+        },
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    // deleting a seller
+    app.delete(
+      "/users/sellers/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+
+        const result = await usersCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
+
     // verifying the role of user and send the response to client side
     app.get("/users/role/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
@@ -309,6 +345,13 @@ async function run() {
       const user = await usersCollection.findOne(query);
       // res.send({ isAdmin: user?.role === "admin" });
       res.send({ role: user?.role });
+    });
+
+    app.get("/users/verifiedSeller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ verified: user?.verified });
     });
 
     //----------------------------
