@@ -173,6 +173,7 @@ async function run() {
       res.send(result);
     });
 
+    // updating the product advertised status
     app.put(
       "/product/advertise/:id",
       verifyJWT,
@@ -276,6 +277,13 @@ async function run() {
       const query = {};
       const users = await usersCollection.find(query).toArray();
       res.send(users);
+    });
+
+    // getting all the sellers
+    app.get("/users/sellers", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { role: "Seller" };
+      const sellers = await usersCollection.find(query).toArray();
+      res.send(sellers);
     });
 
     // posting an user
