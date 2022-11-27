@@ -140,6 +140,13 @@ async function run() {
       res.send(product);
     });
 
+    // getting all the advertised products
+    app.get("/advertisedProducts", async (req, res) => {
+      const query = { soldStatus: false, advertised: true };
+      const advertisedProducts = await productsCollection.find(query).toArray();
+      res.send(advertisedProducts);
+    });
+
     // getting products of a specific seller
     app.get(
       "/sellerProducts/:email",
