@@ -147,6 +147,13 @@ async function run() {
       res.send(advertisedProducts);
     });
 
+    // getting all the advertised products
+    app.get("/reportedProducts", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { reported: true };
+      const reportedProducts = await productsCollection.find(query).toArray();
+      res.send(reportedProducts);
+    });
+
     // getting products of a specific seller
     app.get(
       "/sellerProducts/:email",
@@ -205,6 +212,31 @@ async function run() {
       }
     );
 
+    // updating a product status to reported
+    app.put(
+      "/products/reportToAdmin/:id",
+      verifyJWT,
+      verifyBuyer,
+      async (req, res) => {
+        const id = req.params.id;
+
+        const filter = { _id: ObjectId(id) };
+
+        const options = { upsert: true };
+        const updatedDoc = {
+          $set: {
+            reported: true,
+          },
+        };
+        const result = await productsCollection.updateOne(
+          filter,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+      }
+    );
+
     // deleting single product of a specific seller
     app.delete("/products/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
@@ -220,6 +252,20 @@ async function run() {
       const result = await productsCollection.deleteOne(query);
       res.send(result);
     });
+
+    // deleting a reported product
+    app.delete(
+      "/reportedProducts/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+
+        const result = await productsCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
 
     //-----------------------
     // API for bookings
@@ -279,6 +325,15 @@ async function run() {
       res.send(users);
     });
 
+    // verifying the role of user and send the response to client side
+    app.get("/users/role/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      // res.send({ isAdmin: user?.role === "admin" });
+      res.send({ role: user?.role });
+    });
+
     // posting an user
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -292,6 +347,15 @@ async function run() {
       }
 
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // deleting a user
+    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+
+      const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
 
@@ -324,34 +388,23 @@ async function run() {
       res.send(result);
     });
 
-    // deleting a seller
-    app.delete(
-      "/users/sellers/:id",
-      verifyJWT,
-      verifyAdmin,
-      async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: ObjectId(id) };
-
-        const result = await usersCollection.deleteOne(query);
-        res.send(result);
-      }
-    );
-
-    // verifying the role of user and send the response to client side
-    app.get("/users/role/:email", verifyJWT, async (req, res) => {
-      const email = req.params.email;
-      const query = { email };
-      const user = await usersCollection.findOne(query);
-      // res.send({ isAdmin: user?.role === "admin" });
-      res.send({ role: user?.role });
-    });
-
-    app.get("/users/verifiedSeller/:email", async (req, res) => {
+    // getting verification status of a seller
+    app.get("/users/verifiedSeller/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
       res.send({ verified: user?.verified });
+    });
+
+    //---------------
+    // api for buyers
+    //-----------------
+
+    // getting all the buyers
+    app.get("/users/buyers", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { role: "Buyer" };
+      const buyers = await usersCollection.find(query).toArray();
+      res.send(buyers);
     });
 
     //----------------------------
