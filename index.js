@@ -56,6 +56,9 @@ async function run() {
       .db("basementOfBooks")
       .collection("products");
 
+    // for implementing search query on products
+    productsCollection.createIndex({ title: "text" });
+
     // products collection
     const bookingsCollection = client
       .db("basementOfBooks")
@@ -152,6 +155,15 @@ async function run() {
       const query = { reported: true };
       const reportedProducts = await productsCollection.find(query).toArray();
       res.send(reportedProducts);
+    });
+
+    // getting the searched Products
+    app.get("/searchedProducts/:searchQuery", verifyJWT, async (req, res) => {
+      const searchQuery = req.params.searchQuery;
+      const query = { $text: { $search: searchQuery } };
+      const cursor = productsCollection.find(query);
+      const products = await cursor.toArray();
+      res.send(products);
     });
 
     // getting products of a specific seller
